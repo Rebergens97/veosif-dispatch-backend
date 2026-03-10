@@ -62,7 +62,7 @@ export default class OnboardingFormComponent extends Component {
                 this.session.isOnboarding().manuallyAuthenticate(token);
 
                 yield this.router.transitionTo('console');
-                return this.notifications.success('Welcome to Fleetbase!');
+                return this.notifications.success('Welcome to VEOSIF Dispatch!');
             } else {
                 this.args.orchestrator.next();
                 this.urlSearchParams.setParamsToCurrentUrl({
