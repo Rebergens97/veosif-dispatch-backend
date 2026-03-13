@@ -83,9 +83,12 @@ $driverData = [
 
 foreach ($driverData as $data) {
     try {
-        // Verifye si driver deja egziste via phone
-        $existingDriver = $Driver::where('company_uuid', $companyUuid)
-                                 ->where('phone', $data['phone'])->first();
+        // Verifye si user pou driver sa a deja egziste
+        $existingUser   = $User::where('email', $data['email'])->first();
+        $existingDriver = $existingUser
+            ? $Driver::where('company_uuid', $companyUuid)
+                     ->where('user_uuid', $existingUser->uuid)->first()
+            : null;
         if ($existingDriver) {
             seed_warn("Driver '{$data['name']}' (phone: {$data['phone']}) deja egziste — sote.");
             $drivers[] = $existingDriver;
@@ -155,6 +158,7 @@ foreach ($vehicleData as $i => $data) {
             'year'            => $data['year'],
             'plate_number'    => $data['plate_number'],
             'status'          => 'active',
+            'online'          => false,
         ];
 
         // Asiyen chofè si li disponib
