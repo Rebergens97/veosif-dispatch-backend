@@ -70,8 +70,8 @@ $userUuid = $user->uuid;
 
 echo "\n";
 
-// ─── Kreye Drivers ───────────────────────────────────────────────────────────
-seed_info("Kreyasyon 3 Drivers...");
+// ─── Kreye Users pou Drivers ─────────────────────────────────────────────────
+seed_info("Kreyasyon Users pou Drivers...");
 $Driver = $models['driver'];
 $drivers = [];
 
@@ -83,19 +83,40 @@ $driverData = [
 
 foreach ($driverData as $data) {
     try {
-        $existing = $Driver::where('company_uuid', $companyUuid)
-                           ->where('name', $data['name'])->first();
-        if ($existing) {
-            seed_warn("Driver '{$data['name']}' deja egziste — sote.");
-            $drivers[] = $existing;
+        // Verifye si driver deja egziste via phone
+        $existingDriver = $Driver::where('company_uuid', $companyUuid)
+                                 ->where('phone', $data['phone'])->first();
+        if ($existingDriver) {
+            seed_warn("Driver '{$data['name']}' (phone: {$data['phone']}) deja egziste — sote.");
+            $drivers[] = $existingDriver;
             continue;
         }
-        $driver = $Driver::create(array_merge($data, [
+
+        // Kreye user pou driver a
+        $driverUser = $User::where('email', $data['email'])->first();
+        if (!$driverUser) {
+            $driverUser = $User::create([
+                'company_uuid'    => $companyUuid,
+                'created_by_uuid' => $userUuid,
+                'name'            => $data['name'],
+                'email'           => $data['email'],
+                'phone'           => $data['phone'],
+                'password'        => \Illuminate\Support\Facades\Hash::make('Test1234!'),
+                'type'            => 'driver',
+                'status'          => 'active',
+            ]);
+        }
+
+        // Kreye driver lye ak user sa a
+        $driver = $Driver::create([
             'company_uuid'    => $companyUuid,
             'created_by_uuid' => $userUuid,
+            'user_uuid'       => $driverUser->uuid,
+            'phone'           => $data['phone'],
             'status'          => 'active',
-        ]));
-        seed_ok("Driver kreye: {$driver->name} (uuid: {$driver->uuid})");
+            'online'          => false,
+        ]);
+        seed_ok("Driver kreye: {$data['name']} / {$data['phone']} (uuid: {$driver->uuid})");
         $drivers[] = $driver;
     } catch (\Exception $e) {
         seed_err("Driver '{$data['name']}' echwe: " . $e->getMessage());
@@ -110,26 +131,31 @@ $Vehicle = $models['vehicle'];
 $vehicles = [];
 
 $vehicleData = [
-    ['display_name' => 'Moto-001',  'plate_number' => 'AA-1001', 'trim' => 'Motorcycle'],
-    ['display_name' => 'Car-001',   'plate_number' => 'AA-1002', 'trim' => 'Sedan'],
-    ['display_name' => 'Truck-001', 'plate_number' => 'AA-1003', 'trim' => 'Truck'],
+    ['name' => 'Moto-001',  'plate_number' => 'AA-1001', 'make' => 'Honda',   'model' => 'CG125',  'year' => 2020],
+    ['name' => 'Car-001',   'plate_number' => 'AA-1002', 'make' => 'Toyota',  'model' => 'Corolla','year' => 2021],
+    ['name' => 'Truck-001', 'plate_number' => 'AA-1003', 'make' => 'Isuzu',   'model' => 'NQR',    'year' => 2019],
 ];
 
 foreach ($vehicleData as $i => $data) {
     try {
+        // Dedup pa plate_number
         $existing = $Vehicle::where('company_uuid', $companyUuid)
-                            ->where('display_name', $data['display_name'])->first();
+                            ->where('plate_number', $data['plate_number'])->first();
         if ($existing) {
-            seed_warn("Vehicle '{$data['display_name']}' deja egziste — sote.");
+            seed_warn("Vehicle '{$data['name']}' ({$data['plate_number']}) deja egziste — sote.");
             $vehicles[] = $existing;
             continue;
         }
 
-        $attrs = array_merge($data, [
+        $attrs = [
             'company_uuid'    => $companyUuid,
             'created_by_uuid' => $userUuid,
+            'make'            => $data['make'],
+            'model'           => $data['model'],
+            'year'            => $data['year'],
+            'plate_number'    => $data['plate_number'],
             'status'          => 'active',
-        ]);
+        ];
 
         // Asiyen chofè si li disponib
         if (isset($drivers[$i]) && $drivers[$i]) {
@@ -137,11 +163,11 @@ foreach ($vehicleData as $i => $data) {
         }
 
         $vehicle = $Vehicle::create($attrs);
-        $driverName = (isset($drivers[$i]) && $drivers[$i]) ? $drivers[$i]->name : 'pa asiyen';
-        seed_ok("Vehicle kreye: {$vehicle->display_name} / {$data['plate_number']} — Chofè: {$driverName}");
+        $driverName = (isset($drivers[$i]) && $drivers[$i]) ? $data['name'] : 'pa asiyen';
+        seed_ok("Vehicle kreye: {$data['name']} / {$data['plate_number']} — Chofè: {$driverName}");
         $vehicles[] = $vehicle;
     } catch (\Exception $e) {
-        seed_err("Vehicle '{$data['display_name']}' echwe: " . $e->getMessage());
+        seed_err("Vehicle '{$data['name']}' echwe: " . $e->getMessage());
         $vehicles[] = null;
     }
 }
@@ -152,11 +178,12 @@ seed_info("Kreyasyon 4 Places (adrès)...");
 $Place = $models['place'];
 $places = [];
 
+// Kòdonat GPS pou Ayiti (Port-au-Prince / Pétionville / Delmas)
 $placeData = [
-    ['name' => 'Depot VEOSIF',         'street1' => '10 Rue du Centre',      'city' => 'Port-au-Prince', 'country' => 'HT'],
-    ['name' => "Bòs André",            'street1' => '25 Blvd Toussaint',     'city' => 'Port-au-Prince', 'country' => 'HT'],
-    ['name' => "Madame Claire",        'street1' => '45 Rue Capois',         'city' => 'Pétionville',    'country' => 'HT'],
-    ['name' => "Monsieur Remy",        'street1' => '12 Avenue John Brown',  'city' => 'Delmas',         'country' => 'HT'],
+    ['name' => 'Depot VEOSIF',   'street1' => '10 Rue du Centre',     'city' => 'Port-au-Prince', 'country' => 'HT', 'lat' => 18.5425, 'lng' => -72.3386],
+    ['name' => "Bos Andre",      'street1' => '25 Blvd Toussaint',    'city' => 'Port-au-Prince', 'country' => 'HT', 'lat' => 18.5461, 'lng' => -72.3352],
+    ['name' => "Madame Claire",  'street1' => '45 Rue Capois',        'city' => 'Petionville',    'country' => 'HT', 'lat' => 18.5122, 'lng' => -72.2856],
+    ['name' => "Monsieur Remy",  'street1' => '12 Ave John Brown',    'city' => 'Delmas',         'country' => 'HT', 'lat' => 18.5589, 'lng' => -72.3197],
 ];
 
 foreach ($placeData as $data) {
@@ -168,10 +195,18 @@ foreach ($placeData as $data) {
             $places[] = $existing;
             continue;
         }
-        $place = $Place::create(array_merge($data, [
+
+        $place = $Place::create([
             'company_uuid'    => $companyUuid,
             'created_by_uuid' => $userUuid,
-        ]));
+            'name'            => $data['name'],
+            'street1'         => $data['street1'],
+            'city'            => $data['city'],
+            'country'         => $data['country'],
+            'location'        => DB::raw("ST_GeomFromText('POINT({$data['lat']} {$data['lng']})')"),
+            'latitude'        => $data['lat'],
+            'longitude'       => $data['lng'],
+        ]);
         seed_ok("Place kreye: {$place->name} — {$data['street1']}, {$data['city']}");
         $places[] = $place;
     } catch (\Exception $e) {
