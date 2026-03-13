@@ -13,10 +13,10 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
 
 // ─── Koulè output ─────────────────────────────────────────────────────────────
-function ok($msg)   { echo "\033[0;32m✔\033[0m  {$msg}\n"; }
-function err($msg)  { echo "\033[0;31m✖\033[0m  {$msg}\n"; }
-function info($msg) { echo "\033[0;34m→\033[0m  {$msg}\n"; }
-function warn($msg) { echo "\033[1;33m⚠\033[0m  {$msg}\n"; }
+function seed_ok($msg)   { echo "\033[0;32m✔\033[0m  {$msg}\n"; }
+function seed_err($msg)  { echo "\033[0;31m✖\033[0m  {$msg}\n"; }
+function seed_info($msg) { echo "\033[0;34m→\033[0m  {$msg}\n"; }
+function seed_warn($msg) { echo "\033[1;33m⚠\033[0m  {$msg}\n"; }
 
 echo "\n";
 echo "========================================\n";
@@ -34,44 +34,44 @@ $models = [
     'order'    => 'Fleetbase\FleetOps\Models\Order',
 ];
 
-info("Verifye modèl yo...");
+seed_info("Verifye modèl yo...");
 foreach ($models as $name => $class) {
     if (class_exists($class)) {
-        ok("{$name}: {$class}");
+        seed_ok("{$name}: {$class}");
     } else {
-        err("{$name}: {$class} — PA JWENN");
+        seed_err("{$name}: {$class} — PA JWENN");
     }
 }
 echo "\n";
 
 // ─── Jwenn company ki egziste deja ───────────────────────────────────────────
-info("Chache Company egzistant...");
+seed_info("Chache Company egzistant...");
 $Company = $models['company'];
 $company = $Company::first();
 
 if (!$company) {
-    err("Pa gen okenn company. Kreye yon company nan konsole a anvan.");
+    seed_err("Pa gen okenn company. Kreye yon company nan konsole a anvan.");
     return;
 }
-ok("Company jwenn: {$company->name} (uuid: {$company->uuid})");
+seed_ok("Company jwenn: {$company->name} (uuid: {$company->uuid})");
 $companyUuid = $company->uuid;
 
 // ─── Jwenn admin user ────────────────────────────────────────────────────────
-info("Chache admin user...");
+seed_info("Chache admin user...");
 $User = $models['user'];
 $user = $User::where('company_uuid', $companyUuid)->first();
 
 if (!$user) {
-    err("Pa gen okenn user pou company sa a.");
+    seed_err("Pa gen okenn user pou company sa a.");
     return;
 }
-ok("User jwenn: {$user->name} / {$user->email}");
+seed_ok("User jwenn: {$user->name} / {$user->email}");
 $userUuid = $user->uuid;
 
 echo "\n";
 
 // ─── Kreye Drivers ───────────────────────────────────────────────────────────
-info("Kreyasyon 3 Drivers...");
+seed_info("Kreyasyon 3 Drivers...");
 $Driver = $models['driver'];
 $drivers = [];
 
@@ -86,7 +86,7 @@ foreach ($driverData as $data) {
         $existing = $Driver::where('company_uuid', $companyUuid)
                            ->where('name', $data['name'])->first();
         if ($existing) {
-            warn("Driver '{$data['name']}' deja egziste — sote.");
+            seed_warn("Driver '{$data['name']}' deja egziste — sote.");
             $drivers[] = $existing;
             continue;
         }
@@ -95,17 +95,17 @@ foreach ($driverData as $data) {
             'created_by_uuid' => $userUuid,
             'status'          => 'active',
         ]));
-        ok("Driver kreye: {$driver->name} (uuid: {$driver->uuid})");
+        seed_ok("Driver kreye: {$driver->name} (uuid: {$driver->uuid})");
         $drivers[] = $driver;
     } catch (\Exception $e) {
-        err("Driver '{$data['name']}' echwe: " . $e->getMessage());
+        seed_err("Driver '{$data['name']}' echwe: " . $e->getMessage());
         $drivers[] = null;
     }
 }
 echo "\n";
 
 // ─── Kreye Vehicles ──────────────────────────────────────────────────────────
-info("Kreyasyon 3 Vehicles...");
+seed_info("Kreyasyon 3 Vehicles...");
 $Vehicle = $models['vehicle'];
 $vehicles = [];
 
@@ -120,7 +120,7 @@ foreach ($vehicleData as $i => $data) {
         $existing = $Vehicle::where('company_uuid', $companyUuid)
                             ->where('display_name', $data['display_name'])->first();
         if ($existing) {
-            warn("Vehicle '{$data['display_name']}' deja egziste — sote.");
+            seed_warn("Vehicle '{$data['display_name']}' deja egziste — sote.");
             $vehicles[] = $existing;
             continue;
         }
@@ -138,17 +138,17 @@ foreach ($vehicleData as $i => $data) {
 
         $vehicle = $Vehicle::create($attrs);
         $driverName = (isset($drivers[$i]) && $drivers[$i]) ? $drivers[$i]->name : 'pa asiyen';
-        ok("Vehicle kreye: {$vehicle->display_name} / {$data['plate_number']} — Chofè: {$driverName}");
+        seed_ok("Vehicle kreye: {$vehicle->display_name} / {$data['plate_number']} — Chofè: {$driverName}");
         $vehicles[] = $vehicle;
     } catch (\Exception $e) {
-        err("Vehicle '{$data['display_name']}' echwe: " . $e->getMessage());
+        seed_err("Vehicle '{$data['display_name']}' echwe: " . $e->getMessage());
         $vehicles[] = null;
     }
 }
 echo "\n";
 
 // ─── Kreye Places ────────────────────────────────────────────────────────────
-info("Kreyasyon 4 Places (adrès)...");
+seed_info("Kreyasyon 4 Places (adrès)...");
 $Place = $models['place'];
 $places = [];
 
@@ -164,7 +164,7 @@ foreach ($placeData as $data) {
         $existing = $Place::where('company_uuid', $companyUuid)
                          ->where('name', $data['name'])->first();
         if ($existing) {
-            warn("Place '{$data['name']}' deja egziste — sote.");
+            seed_warn("Place '{$data['name']}' deja egziste — sote.");
             $places[] = $existing;
             continue;
         }
@@ -172,17 +172,17 @@ foreach ($placeData as $data) {
             'company_uuid'    => $companyUuid,
             'created_by_uuid' => $userUuid,
         ]));
-        ok("Place kreye: {$place->name} — {$data['street1']}, {$data['city']}");
+        seed_ok("Place kreye: {$place->name} — {$data['street1']}, {$data['city']}");
         $places[] = $place;
     } catch (\Exception $e) {
-        err("Place '{$data['name']}' echwe: " . $e->getMessage());
+        seed_err("Place '{$data['name']}' echwe: " . $e->getMessage());
         $places[] = null;
     }
 }
 echo "\n";
 
 // ─── Kreye Contacts ──────────────────────────────────────────────────────────
-info("Kreyasyon 3 Contacts (kliyan)...");
+seed_info("Kreyasyon 3 Contacts (kliyan)...");
 $Contact = $models['contact'];
 $contacts = [];
 
@@ -197,7 +197,7 @@ foreach ($contactData as $data) {
         $existing = $Contact::where('company_uuid', $companyUuid)
                            ->where('name', $data['name'])->first();
         if ($existing) {
-            warn("Contact '{$data['name']}' deja egziste — sote.");
+            seed_warn("Contact '{$data['name']}' deja egziste — sote.");
             $contacts[] = $existing;
             continue;
         }
@@ -213,17 +213,17 @@ foreach ($contactData as $data) {
             $attrs['place_uuid'] = $places[$data['place_idx']]->uuid;
         }
         $contact = $Contact::create($attrs);
-        ok("Contact kreye: {$contact->name} / {$data['phone']}");
+        seed_ok("Contact kreye: {$contact->name} / {$data['phone']}");
         $contacts[] = $contact;
     } catch (\Exception $e) {
-        err("Contact '{$data['name']}' echwe: " . $e->getMessage());
+        seed_err("Contact '{$data['name']}' echwe: " . $e->getMessage());
         $contacts[] = null;
     }
 }
 echo "\n";
 
 // ─── Kreye Orders ────────────────────────────────────────────────────────────
-info("Kreyasyon 3 Orders...");
+seed_info("Kreyasyon 3 Orders...");
 $Order = $models['order'];
 
 $depot = $places[0] ?? null;
@@ -283,9 +283,9 @@ foreach ($orderData as $data) {
 
         $order = $Order::create($attrs);
         $pid = $order->public_id ?? $order->uuid;
-        ok("Order kreye: {$data['label']} — {$pid}");
+        seed_ok("Order kreye: {$data['label']} — {$pid}");
     } catch (\Exception $e) {
-        err("Order '{$data['label']}' echwe: " . $e->getMessage());
+        seed_err("Order '{$data['label']}' echwe: " . $e->getMessage());
     }
 }
 
