@@ -23,7 +23,12 @@ api/.fleetbase-id
 act.sh
 composer-auth.json
 docker/database/*
+!docker/database/.gitkeep
 docker/database/mysql/*
+!docker/database/mysql/.gitkeep
+# Helm secrets - use placeholders in repo; real values only in secure location
+infra/helm/secrets.env
+infra/helm/mysql.txt
 .talismanrc
 verdaccio/minio
 verdaccio/config/htpasswd
@@ -49,6 +54,10 @@ verdaccio
 .tools-versions
 # binary build resources
 builds/osx/frankenphp
+# Database backups (local only, don't commit)
+scripts/backups/*
+!scripts/backups/.gitkeep
+
 # build artifacts
 /builds/dist/
 /builds/linux/spc/downloads/*
